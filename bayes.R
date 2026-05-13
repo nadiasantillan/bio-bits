@@ -130,5 +130,34 @@ X_clean %>%
 #     re_formula = NA))
 # 
 
+# Use el modelo de bayes fit_multi
 
+# Calculo de las media posterior a partir del modelo
+
+pred_MVR <- fit_multi %>% 
+  epred_draws(newdata = expand_grid(
+    Treatment = levels(X_clean$Treatment),
+    StudyPeriodWeek = levels(X_clean$StudyPeriodWeek),
+    Work_status = levels(X_clean$Work_status)
+  ), 
+  re_formula = NA)
+
+summary(pred_MVR)
+
+library(ggplot2)
+
+# Grafico separado por latencia y eficiencia
+
+#windows()
+ggplot(pred_MVR, aes(x = StudyPeriodWeek, y = .epred, color = Treatment)) +
+  stat_pointinterval(position = position_dodge(width = 0.3)) + 
+  facet_wrap(~.category, scales = "free_y") + 
+  theme_minimal() +
+  labs(
+    title = "Efecto esperado de la Melatonina",
+    subtitle = "Predicciones de la media posterior por grupo",
+    y = "Valor esperado (escala del modelo)",
+    x = "Semana del Periodo de Estudio",
+    color = "Tratamiento"
+  )
 
