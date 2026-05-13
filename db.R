@@ -26,7 +26,6 @@ melatonine_fecha_actigrafo <- read_excel(dataset_name, sheet = "Combined", range
 melatonine_actigrafo <- read_excel(dataset_name, sheet = "Combined", range="AM1:AT3735")
 melatonine <- cbind(melatonine_participante, melatonine_fecha_actigrafo, melatonine_actigrafo)
 melatonine$anio_mes <- format(melatonine$Date_Onset_ACT, "%Y%m")
-melatonine$StudyPeriodWeek <- factor(melatonine$StudyPeriodWeek)
 melatonine$anio_mes <- factor(format(melatonine$Date_Onset_ACT, "%Y%m"))
 melatonine$Mes <- factor(month(melatonine$Date_Onset_ACT))
 melatonine$estacion <- factor(sapply(melatonine$Date_Onset_ACT, estacion))
@@ -51,7 +50,7 @@ promedios_base <- melatonine %>%
 melatonine <- inner_join(melatonine, promedios_base, by = "ParticipantID")
 melatonine <- melatonine %>%
   filter(StudyPeriodWeek != 0)
-
+melatonine$StudyPeriodWeek <- factor(melatonine$StudyPeriodWeek)
 #------------------------Convertir a factor a ParticipantID--------------------#
 melatonine$ParticipantID <- as.factor(melatonine$ParticipantID)
 melatonine$Treatment <- as.factor(melatonine$Treatment)

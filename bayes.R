@@ -49,7 +49,6 @@ columnas_uso <- c("ParticipantID","SOL_ACT", "SET1_ACT", "Treatment", "StudyPeri
 datos_clean <- na.omit(melatonine[, columnas_uso])
 
 datos_est <- data.frame(SOL_ACT=melatonine$SOL_ACT,SET1_ACT=melatonine$SET1_ACT,SE_ACT=melatonine$SE_ACT)
-
 #--------------------Estandarizacion de los datos -----------------------------#
 X <- scale(datos_est, center = T, scale = T)
 X <- as.data.frame(X)
@@ -62,6 +61,9 @@ X$Mes <- melatonine$Mes
 X
 X_clean <- na.omit(X)
 
+X_clean$Work_status <- factor(X_clean$Work_status)
+str(X_clean)
+unique(X_clean$Work_status)
 #--------------Función para convertir mes a estación--------------------------#
 #
 # estacion <- function(mes_num) {
@@ -86,7 +88,7 @@ formula_multi <- mvbf(
   rescor = T
 )
 fit_multi <- brm(
-  formula = formula_multi,
+  SET1_ACT ~ Treatment * StudyPeriodWeek + Work_status + (1|ParticipantID),
   data = X_clean,
   family = gaussian(),
   chains = 4,
@@ -94,8 +96,10 @@ fit_multi <- brm(
   iter = 2000
 )
 
-summary(fit_multi)
+unique(X_clean$StudyPeriodWeek)
 
+summary(fit_multi)
+get_variables(fit_multi)
 #-----------------Gráficos----------------------------------------------------#
 x11();pp_check(fit_multi, resp = "SOLACT")
 x11();pp_check(fit_multi, resp = "SET1ACT")
@@ -105,14 +109,26 @@ bayes_R2(fit_multi)
 
 library(tidyverse)
 library(tidybayes)
-pred_MVR <- fit_multi %>% #el nombre del objeto con el modelo
-  epred_draws(newdata = expand_grid(
-    #en este caso se construye una grilla con la secuencia de valores del predictor1 (cambiar segun tu caso)
-    #la combincion con los niveles de tu predictor2 que en este caso es una var catergorica,
-    # y los niveles del factor aleatorio como Est.aletoria (utilizar el nombre de la variable que pusiste).
-    #ajustar este ejemplo a tu caso.
-    pred1= levels( X_clean$Treatment),
-    pred2= levels( X_clean$StudyPeriodWeek),
-    Estr.aleatorio= c( "1", "2", "3", "4", "5", "6", "7"),
-    re_formula = NA))
-?epred_draws
+str(X_clean)
+X_clean %>%
+  data_grid(ParticipantID,Treatment, StudyPeriodWeek, Work_status) %>%
+  add_epred_draws(fit_multi, allow_new_levels=T) %>%
+  head(10, allow_new_levels=T)
+
+
+# pred_MVR <- fit_multi %>% #el nombre del objeto con el modelo
+#   spread_draws(newdata = expand_grid(
+#     #en este caso se construye una grilla con la secuencia de valores del predictor1 (cambiar segun tu caso)
+#     #la combincion con los niveles de tu predictor2 que en este caso es una var catergorica,
+#     # y los niveles del factor aleatorio como Est.aletoria (utilizar el nombre de la variable que pusiste).
+#     #ajustar este ejemplo a tu caso.
+#     pred1= levels( X_clean$Treatment),
+#     pred2= levels( X_clean$StudyPeriodWeek),
+#     pred3= levels( X_clean$Work_status),
+#     pred4= levels( X_clean$ParticipantID),
+#     Estr.aleatorio= c( "1", "2", "3", "4", "5", "6", "7"),
+#     re_formula = NA))
+# 
+
+
+
