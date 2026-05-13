@@ -1,0 +1,118 @@
+#----------------- Modelo Bayesiano--------------------#
+#-----------------Materia Optativa I-------------------#
+#--------------Autores: -------------------------------#
+#-----FERRAGUTTI - SANTILLAN - VILLARREAL--------------#
+#-------------------Año: 2026 -------------------------#
+setwd("~/unsl/bio/scripts")
+#--------------------MODELO BAYESIANO-----------------------------#
+# Scripts auxiliares
+#------------------------------------------------------
+source("./db.R")
+# Bibliotecas
+#------------------------------------------------------
+# install.packages("brms")
+setwd("C:/Users/Usuario/Documents/UNSL/Cuarto Año/Optativa I")
+
+# ------------------Carga de Librerias----------------------------------------#
+library(readxl)
+library(ggplot2)
+library(gridExtra)
+library(brms)
+
+# ------------------Creacion de la base de datos --------------------------#
+# melatonine_all <- read_excel("data/pmed.1002587.s005.xlsx", sheet = "Combined")
+# melatonine <- melatonine_all[,c("ParticipantID", "Treatment", "Delayed/Not Delayed",
+#                                 "StudyPeriodWeek", "Work/Non-work","Date_offset_ACT", "TIB_ACT", "TST_ACT", "SOL_ACT",	"SE_ACT",
+#                                 "WASO_ACT",	"SET1_ACT",	"SET2_ACT",	"SET3_ACT")]
+
+#----------------- Cambio de nombre de varuables -----------------------------#
+# colnames(melatonine)[colnames(melatonine) == "Work/Non-work"] <- "Work_status"
+# colnames(melatonine)[colnames(melatonine) == "Delayed/Not Delayed"] <- "Delayed_status"
+str(melatonine)
+#---------------------------- Creacion de la variable Mes ---------------------#
+
+#Convertir a formato de fecha real (R Base)
+
+# melatonine$Fecha_Real <- as.Date(melatonine$Date_offset_ACT, format = "%d/%m/%Y")
+
+#Extraer el mes como un factor
+# melatonine$Mes <- as.factor(format(melatonine$Fecha_Real, "%m"))
+
+#------------------------Convertir a factor a ParticipantID--------------------#
+
+# melatonine$ParticipantID <- as.factor(melatonine$ParticipantID)
+
+#------------------------- Limpieza de la base de datos -----------------------#
+columnas_uso <- c("ParticipantID","SOL_ACT", "SET1_ACT", "Treatment", "StudyPeriodWeek",
+                  "Work_status", "TIB_ACT", "TST_ACT", "SE_ACT", "Mes")
+
+datos_clean <- na.omit(melatonine[, columnas_uso])
+
+datos_est <- data.frame(SOL_ACT=melatonine$SOL_ACT,SET1_ACT=melatonine$SET1_ACT,SE_ACT=melatonine$SE_ACT)
+
+#--------------------Estandarizacion de los datos -----------------------------#
+X <- scale(datos_est, center = T, scale = T)
+X <- as.data.frame(X)
+
+X$ParticipantID <- melatonine$ParticipantID
+X$Treatment <- melatonine$Treatment
+X$StudyPeriodWeek <- melatonine$StudyPeriodWeek
+X$Work_status <- melatonine$Work_status
+X$Mes <- melatonine$Mes
+X
+X_clean <- na.omit(X)
+
+#--------------Función para convertir mes a estación--------------------------#
+#
+# estacion <- function(mes_num) {
+#   ifelse(mes_num %in% c(12, 1, 2), "Verano",
+#          ifelse(mes_num %in% c(3, 4, 5), "Otoño",
+#                 ifelse(mes_num %in% c(6, 7, 8), "Invierno",
+#                        ifelse(mes_num %in% c(9, 10, 11), "Primavera", NA))))
+# }
+
+# Aplicar la función (asegurarse de que 'Mes' sea numérico para esto)
+# X_clean$Estacion <- as.factor(estacion(as.numeric(as.character(X_clean$Mes))))
+
+#---------------------- Convertir las categoricas a factor---------------------#
+# X_clean$Treatment <- as.factor(X_clean$Treatment)
+# X_clean$StudyPeriodWeek <- as.factor(X_clean$StudyPeriodWeek)
+# X_clean$Work_status <- as.factor(X_clean$Work_status)
+
+#----------------------------- Modelo BRMS ------------------------------------#
+formula_multi <- mvbf(
+  SOL_ACT ~ Treatment * StudyPeriodWeek + Work_status + (1|ParticipantID),
+  SET1_ACT ~ Treatment * StudyPeriodWeek + Work_status + (1|ParticipantID),
+  rescor = T
+)
+fit_multi <- brm(
+  formula = formula_multi,
+  data = X_clean,
+  family = gaussian(),
+  chains = 4,
+  cores = 4,
+  iter = 2000
+)
+
+summary(fit_multi)
+
+#-----------------Gráficos----------------------------------------------------#
+x11();pp_check(fit_multi, resp = "SOLACT")
+x11();pp_check(fit_multi, resp = "SET1ACT")
+
+#----------------R Cuadrado --------------------------------------------------~#
+bayes_R2(fit_multi)
+
+library(tidyverse)
+library(tidybayes)
+pred_MVR <- fit_multi %>% #el nombre del objeto con el modelo
+  epred_draws(newdata = expand_grid(
+    #en este caso se construye una grilla con la secuencia de valores del predictor1 (cambiar segun tu caso)
+    #la combincion con los niveles de tu predictor2 que en este caso es una var catergorica,
+    # y los niveles del factor aleatorio como Est.aletoria (utilizar el nombre de la variable que pusiste).
+    #ajustar este ejemplo a tu caso.
+    pred1= levels( X_clean$Treatment),
+    pred2= levels( X_clean$StudyPeriodWeek),
+    Estr.aleatorio= c( "1", "2", "3", "4", "5", "6", "7"),
+    re_formula = NA))
+?epred_draws
