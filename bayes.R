@@ -18,6 +18,8 @@ library(readxl)
 library(ggplot2)
 library(gridExtra)
 library(brms)
+library(tidyverse)
+library(tidybayes)
 
 # ------------------Creacion de la base de datos --------------------------#
 # melatonine_all <- read_excel("data/pmed.1002587.s005.xlsx", sheet = "Combined")
@@ -48,7 +50,12 @@ columnas_uso <- c("ParticipantID","SOL_ACT", "SET1_ACT", "Treatment", "StudyPeri
 
 datos_clean <- na.omit(melatonine[, columnas_uso])
 
-datos_est <- data.frame(SOL_ACT=melatonine$SOL_ACT,SET1_ACT=melatonine$SET1_ACT,SE_ACT=melatonine$SE_ACT)
+datos_est <- data.frame(
+  SOL_ACT=melatonine$SOL_ACT,
+  SET1_ACT=melatonine$SET1_ACT,
+  SE_ACT=melatonine$SE_ACT,
+  SET1_ACT_AVG_BASE=melatonine$SET1_ACT_AVG_BASE,
+  SOL_ACT_AVG_BASE=melatonine$SOL_ACT_AVG_BASE)
 #--------------------Estandarizacion de los datos -----------------------------#
 X <- scale(datos_est, center = T, scale = T)
 X <- as.data.frame(X)
@@ -83,20 +90,20 @@ unique(X_clean$Work_status)
 
 #----------------------------- Modelo BRMS ------------------------------------#
 formula_multi <- mvbf(
-  SOL_ACT ~ Treatment * StudyPeriodWeek + Work_status + (1|ParticipantID),
-  SET1_ACT ~ Treatment * StudyPeriodWeek + Work_status + (1|ParticipantID),
+  SOL_ACT ~ Treatment + StudyPeriodWeek + Work_status +SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE+ (1|ParticipantID),
+  SET1_ACT ~ Treatment + StudyPeriodWeek + Work_status +SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE+ (1|ParticipantID),
+  # SOL_ACT ~ Treatment * StudyPeriodWeek + Work_status +(1|ParticipantID),
+  # SET1_ACT ~ Treatment * StudyPeriodWeek + Work_status + (1|ParticipantID),
   rescor = T
 )
 fit_multi <- brm(
-  SET1_ACT ~ Treatment * StudyPeriodWeek + Work_status + (1|ParticipantID),
+  formula_multi,
   data = X_clean,
   family = gaussian(),
   chains = 4,
   cores = 4,
   iter = 2000
 )
-
-unique(X_clean$StudyPeriodWeek)
 
 summary(fit_multi)
 get_variables(fit_multi)
@@ -107,38 +114,18 @@ x11();pp_check(fit_multi, resp = "SET1ACT")
 #----------------R Cuadrado --------------------------------------------------~#
 bayes_R2(fit_multi)
 
-library(tidyverse)
-library(tidybayes)
 str(X_clean)
-X_clean %>%
-  data_grid(ParticipantID,Treatment, StudyPeriodWeek, Work_status) %>%
-  add_epred_draws(fit_multi, allow_new_levels=T) %>%
-  head(10, allow_new_levels=T)
-
-
-# pred_MVR <- fit_multi %>% #el nombre del objeto con el modelo
-#   spread_draws(newdata = expand_grid(
-#     #en este caso se construye una grilla con la secuencia de valores del predictor1 (cambiar segun tu caso)
-#     #la combincion con los niveles de tu predictor2 que en este caso es una var catergorica,
-#     # y los niveles del factor aleatorio como Est.aletoria (utilizar el nombre de la variable que pusiste).
-#     #ajustar este ejemplo a tu caso.
-#     pred1= levels( X_clean$Treatment),
-#     pred2= levels( X_clean$StudyPeriodWeek),
-#     pred3= levels( X_clean$Work_status),
-#     pred4= levels( X_clean$ParticipantID),
-#     Estr.aleatorio= c( "1", "2", "3", "4", "5", "6", "7"),
-#     re_formula = NA))
-# 
 
 # Use el modelo de bayes fit_multi
-
 # Calculo de las media posterior a partir del modelo
 
 pred_MVR <- fit_multi %>% 
   epred_draws(newdata = expand_grid(
     Treatment = levels(X_clean$Treatment),
     StudyPeriodWeek = levels(X_clean$StudyPeriodWeek),
-    Work_status = levels(X_clean$Work_status)
+    Work_status = levels(X_clean$Work_status),
+    SOL_ACT_AVG_BASE= seq( min( X_clean$SOL_ACT_AVG_BASE), max(X_clean$SOL_ACT_AVG_BASE), by=1),
+    SET1_ACT_AVG_BASE= seq( min( X_clean$SET1_ACT_AVG_BASE), max(X_clean$SET1_ACT_AVG_BASE), by=1),
   ), 
   re_formula = NA)
 
@@ -148,7 +135,8 @@ library(ggplot2)
 
 # Grafico separado por latencia y eficiencia
 
-#windows()
+windows()
+# x11()
 ggplot(pred_MVR, aes(x = StudyPeriodWeek, y = .epred, color = Treatment)) +
   stat_pointinterval(position = position_dodge(width = 0.3)) + 
   facet_wrap(~.category, scales = "free_y") + 
