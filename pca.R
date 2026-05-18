@@ -71,13 +71,14 @@ pca_for_model$TratamientoDesc <- factor(pca_for_model$TratamientoDesc)
 
 library(car)
 fit_pc2_glmm <- glmmTMB(
-  PC2 ~ TratamientoDesc * StudyPeriodWeek + Work_status + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE+ (1 | ParticipantID),
+  PC2 ~ TratamientoDesc + StudyPeriodWeek + Work_status + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE+ (1 | ParticipantID),
   # Valor_Z ~ Metrica + Work_status + Treatment * Semana_Num + (1 | ParticipantID | Mes | estacion), hacer con sol_act y se_act
   # interacciones entre tratamiento y semana de tratamiento
   data = pca_for_model,
   family = gaussian()
 )
 Anova(fit_pc2_glmm) # devianza
+# vif(fit_pc2_glmm)
 # sacar semana base del tratamiento
 # agregar promedios de la semana base como un predictor
 
@@ -123,3 +124,40 @@ plot_model(fit_pc2_glmm,
        y = "PC2",
        color = "Grupo") +
   theme_minimal()
+# VER !!! extraer predicciones de los efectos
+# efecto promedio del uso de la melatonina sobre la latencia y eficiencia del sueño
+library(ggeffects)
+# 
+# r2 marginal y condicional
+r2_nakagawa(fit_pc2_glmm)
+
+
+predicciones <- ggpredict(fit_pc2_glmm, terms = c("StudyPeriodWeek", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"))
+
+# Ver el dataframe con las predicciones
+print(predicciones)
+
+# -------------------
+pca_resultado <- prcomp(datos_originales, center = TRUE, scale. = TRUE)
+
+# 2. Reconstrucción inversa paso a paso
+# Multiplicamos los componentes por la transpuesta de la rotación
+datos_reconstruidos <- pca_resultado$x %*% t(pca_resultado$rotation)
+
+# Deshacer la escala (scale = TRUE) multiplicando por la desviación estándar original
+if (!is.null(pca_resultado$scale)) {
+  datos_reconstruidos <- scale(datos_reconstruidos, center = FALSE, scale = 1 / pca_resultado$scale)
+}
+
+# Deshacer el centrado (center = TRUE) sumando la media original
+if (!is.null(pca_resultado$center)) {
+  datos_reconstruidos <- scale(datos_reconstruidos, center = -pca_resultado$center, scale = FALSE)
+}
+
+# Convertir a data frame para comparar
+datos_reconstruidos <- as.data.frame(datos_reconstruidos)
+colnames(datos_reconstruidos) <- colnames(datos_originales)
+
+# 3. Comprobación: Ver si los datos reconstruidos son idénticos a los originales
+all.equal(datos_originales, datos_reconstruidos)
+# [1] TRUE
