@@ -118,15 +118,11 @@ plot_model(fit_pc2_glmm,
        y = "PC2",
        color = "Grupo") +
   theme_minimal()
-# VER !!! extraer predicciones de los efectos
-# efecto promedio del uso de la melatonina sobre la latencia y eficiencia del sueño
-library(ggeffects)
-# 
-# r2 marginal y condicional
-r2_nakagawa(fit_pc2_glmm)
 
+predicciones_1 <- ggpredict(fit_pc1_glmm, terms = c("StudyPeriodWeek", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"))
+predicciones_2 <- ggpredict(fit_pc2_glmm, terms = c("StudyPeriodWeek", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"))
 
-predicciones <- ggpredict(fit_pc2_glmm, terms = c("StudyPeriodWeek", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"))
-
-summary(predicciones)
-
+summary(predicciones_1)
+summary(predicciones_2)
+x11();plot(predicciones_1)
+x11();plot(predicciones_2)
