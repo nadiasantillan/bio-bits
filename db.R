@@ -48,11 +48,25 @@ promedios_base <- melatonine %>%
   )
 
 melatonine <- inner_join(melatonine, promedios_base, by = "ParticipantID")
+melatonine_base <- melatonine %>%
+  filter(StudyPeriodWeek == 0)
 melatonine <- melatonine %>%
   filter(StudyPeriodWeek != 0)
-melatonine$StudyPeriodWeek <- factor(melatonine$StudyPeriodWeek)
-#------------------------Convertir a factor a ParticipantID--------------------#
-melatonine$ParticipantID <- as.factor(melatonine$ParticipantID)
-melatonine$Treatment <- as.factor(melatonine$Treatment)
-melatonine$Work_status <- as.factor(melatonine$Work_status)
-str(melatonine)
+
+#------------------------Convertir a factores--------------------#
+convertir_a_factores <- function(melatonine) {
+  melatonine$StudyPeriodWeek <- factor(melatonine$StudyPeriodWeek)
+  melatonine$ParticipantID <- factor(melatonine$ParticipantID)
+  melatonine$Treatment <- factor(melatonine$Treatment)
+  melatonine$Work_status <- factor(melatonine$Work_status)
+  return(melatonine)
+}
+
+melatonine<-convertir_a_factores(melatonine)
+melatonine_base<-convertir_a_factores(melatonine_base)
+
+#remover Delayed Status
+#sleepepisodeno
+# Matching Diary with Actigraphy: num  NA NA NA NA NA NA NA NA NA NA ...
+# $ StudyPeriod 
+head(melatonine)
