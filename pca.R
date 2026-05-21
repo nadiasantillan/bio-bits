@@ -16,20 +16,15 @@ library(ggbiplot)
 library(emmeans)
 library(glmmTMB)
 library(ggeffects)
+library(performance)
 # -------------------------------------- PCA ----------------------------------------#  
 melatonine_pca <- function(data, variables_pca, titulo) {
   data_pca <- data[, variables_pca] # menos variables en la entrada del PCA
   
-  # Original data melatonine_num, cleaned data x
-  x <- na.omit(data_pca)
-  borrados <- na.action(x)
-
-  data_nona <- data[-borrados,]
-  
-  pca <- prcomp(x, scale = T, center = T)
+  pca <- prcomp(data_pca, scale = T, center = T)
   
   plot <- ggbiplot(pca, obs.scale = 1, var.scale = 1,
-           groups=factor(data_nona$TratamientoDesc),
+           groups=factor(data$TratamientoDesc),
            point.size=1,
            varname.size = 4, 
            varname.color = "firebrick",
@@ -39,7 +34,7 @@ melatonine_pca <- function(data, variables_pca, titulo) {
     labs(title = titulo)
     theme_minimal() 
   
-  return(list(pca=pca, plot=plot, cor=cor(x, pca$x), data=data_nona))
+  return(list(pca=pca, plot=plot, cor=cor(data_pca, pca$x)))
 }
 
 variables_pca_todas <- c("TIB_ACT", "TST_ACT", "SOL_ACT", "SET1_ACT", "WASO_ACT", "SET2_ACT", "SET3_ACT")
@@ -55,7 +50,6 @@ final_pca <- melatonine_pca(
   melatonine, 
   variables_pca_reducido,
   "Semanas de tratamiento - Variables no colineales")
-
 x11();par(mfrow=c(2, 2))
 wrap_plots(initial_pca$plot,base_pca$plot, all_pca$plot, final_pca$plot)
 
@@ -63,7 +57,7 @@ wrap_plots(initial_pca$plot,base_pca$plot, all_pca$plot, final_pca$plot)
 final_pca$cor
 # Proporciones varianza explicada-----------------------------------------------
 var_prop <- round((final_pca$pca$sdev^2)*100/sum(final_pca$pca$sdev^2),2)
-
+#vif base
 # Distribucion componentes------------------------------------------------------
 x11(50,20)
 par(mfrow=c(1,2))
@@ -76,11 +70,11 @@ h2 <- ggplot(final_pca$pca$x, aes(x = PC2)) +
 wrap_plots(h1, h2)
 
 # Tests de normalidad-----------------------------------------------------------
-shapiro.test(pca$x[,"PC1"])
-shapiro.test(pca$x[,"PC2"])
+shapiro.test(final_pca$pca$x[,"PC1"])
+shapiro.test(final_pca$pca$x[,"PC2"])
 
 
-pca_for_model <- cbind(final_pca$data, final_pca$pca$x)
+pca_for_model <- cbind(melatonine, final_pca$pca$x)
 pca_for_model$TratamientoDesc <- factor(pca_for_model$TratamientoDesc)
 
 library(car)
@@ -103,21 +97,6 @@ Anova(fit_pc2_glmm) # devianza
 summary(fit_pc2_glmm)
 
 
-library(sjPlot)
-x11(width = 24, height = 8)
-par(mfrow=c(1,2))
-plot_model(fit_pc2_glmm, 
-           type = "pred", 
-           terms = c("StudyPeriodWeek", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"),
-           ci.lvl = 0.95) +
-  # scale_color_manual(values = c("1" = "firebrick", "2" = "dodgerblue3"), 
-  #                    labels = c("Placebo", "Melatonina 0.5mg")) +
-  labs(title = "Predicciones del Modelo Mixto: Efecto del Tratamiento",
-       subtitle = "Controlado por Tratamiento, semana, eficiencia del sueño y situación laboral",
-       x = "Semana de Estudio", 
-       y = "PC2",
-       color = "Grupo") +
-  theme_minimal()
 
 predicciones_1 <- ggpredict(fit_pc1_glmm, terms = c("StudyPeriodWeek", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"))
 predicciones_2 <- ggpredict(fit_pc2_glmm, terms = c("StudyPeriodWeek", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"))
@@ -126,3 +105,7 @@ summary(predicciones_1)
 summary(predicciones_2)
 x11();plot(predicciones_1)
 x11();plot(predicciones_2)
+
+# R2 ---------------------------------------------------------------------------
+r2(fit_pc1_glmm)
+r2(fit_pc2_glmm)

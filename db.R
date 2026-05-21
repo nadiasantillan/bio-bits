@@ -37,6 +37,18 @@ melatonine$TrabajaDesc <- factor(ifelse(melatonine$`Work/Non-work` == 1, "Obliga
 #--------------------------- Cambio de nombre de variables --------------------------#
 colnames(melatonine)[colnames(melatonine) == "Work/Non-work"] <- "Work_status"
 colnames(melatonine)[colnames(melatonine) == "Delayed/Not Delayed"] <- "Delayed_status"
+#--------------------------- Eliminación de NAs ---------------------------#
+variables_modelos <- c('SET1_ACT', 'Work_status', 'Treatment', 'StudyPeriodWeek', 
+                        'ParticipantID',"TIB_ACT", "TST_ACT", "SOL_ACT", 
+                        "WASO_ACT", "SET2_ACT", "SET3_ACT")
+data_modelos <- melatonine[, variables_modelos]
+x <- na.omit(data_modelos)
+borrados <- na.action(x)
+melatonine <- melatonine[-borrados,]
+#------------------------- Corrección SET1_ACT=0 --------------------------#
+
+melatonine <- melatonine %>%
+  mutate(SET1_ACT = if_else(SET1_ACT == 0, SE_ACT, SET1_ACT))
 
 #--------------------------- Promedios Semana 0 ---------------------------#
 promedios_base <- melatonine %>%
@@ -69,4 +81,3 @@ melatonine_base<-convertir_a_factores(melatonine_base)
 #sleepepisodeno
 # Matching Diary with Actigraphy: num  NA NA NA NA NA NA NA NA NA NA ...
 # $ StudyPeriod 
-head(melatonine)
