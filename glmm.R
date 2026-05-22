@@ -91,6 +91,7 @@ vars_act <- c("SOL_ACT", "SET1_ACT", "TST_ACT", "TIB_ACT", "SE_ACT", "SET2_ACT",
 # Incluye interacción Tratamiento*Tiempo y efecto aleatorio por Participante
 
 melatonine$SET1_ACT<- melatonine$SET1_ACT/100
+
 data_model <- melatonine[, c("SOL_ACT","SET1_ACT","Work_status","Treatment", "StudyPeriodWeek","SOL_ACT_AVG_BASE","SET1_ACT_AVG_BASE", "ParticipantID")]
 x <- na.omit(data_model)
 borrados <- na.action(x)
@@ -98,14 +99,20 @@ data_nona <- data_model[-borrados,]
 data_nona <-data_nona %>% 
   filter(SET1_ACT>0)
 
+# data_nona <- melatonine
 
 model_solact <- glmmTMB(
   SOL_ACT ~ Work_status + Treatment + StudyPeriodWeek +SOL_ACT_AVG_BASE +SET1_ACT_AVG_BASE + (1 | ParticipantID),
   data = data_nona,
-  family = gaussian()
+  # family = Gamma(link = log) #R2 condicional 0.096
+  # family = gaussian()
+  # family = tweedie(link = "log") R2 condicional 0.229 mismo que normal
+  family = ziGamma(link = "log"), 
+  ziformula=~1
 )
-summary(model_solact)
 
+summary(model_solact)
+Anova(model_solact)
 model_set1 <- glmmTMB(
   SET1_ACT ~ Work_status + Treatment + StudyPeriodWeek +SOL_ACT_AVG_BASE +SET1_ACT_AVG_BASE  + (1 | ParticipantID),
   # Valor_Z ~ Metrica + Work_status + Treatment * Semana_Num + (1 | ParticipantID | Mes | estacion), hacer con sol_act y se_act
