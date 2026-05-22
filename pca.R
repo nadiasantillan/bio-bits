@@ -110,8 +110,8 @@ check_collinearity(
 )
 
 # R2 ---------------------------------------------------------------------------
-r2(fit_pc1_glmm)
-r2(fit_pc2_glmm)
+r2_nakagawa(fit_pc1_glmm)
+r2_nakagawa(fit_pc2_glmm)
 
 predicciones_1 <- ggpredict(fit_pc1_glmm, terms = c("StudyPeriodWeek", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"))
 predicciones_2 <- ggpredict(fit_pc2_glmm, terms = c("StudyPeriodWeek", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"))

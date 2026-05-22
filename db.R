@@ -49,6 +49,11 @@ melatonine <- melatonine[-borrados,]
 
 melatonine <- melatonine %>%
   mutate(SET1_ACT = if_else(SET1_ACT == 0, SE_ACT, SET1_ACT))
+#------------------------- Conversion a porcentaje-------------------------#
+melatonine$SET1_ACT<- melatonine$SET1_ACT/100
+#------------------------- Corrección Ceros -------------------------------
+melatonine <- melatonine %>%
+  mutate(SOL_ACT_NOZERO = if_else(SOL_ACT == 0, 1e-10, SOL_ACT))
 
 #--------------------------- Promedios Semana 0 ---------------------------#
 promedios_base <- melatonine %>%
