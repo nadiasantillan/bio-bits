@@ -20,6 +20,7 @@ library(gridExtra)
 library(brms)
 library(tidyverse)
 library(tidybayes)
+library(performance)
 
 # ------------------Creacion de la base de datos --------------------------#
 # melatonine_all <- read_excel("data/pmed.1002587.s005.xlsx", sheet = "Combined")
@@ -149,3 +150,45 @@ ggplot(pred_MVR, aes(x = StudyPeriodWeek, y = .epred, color = Treatment)) +
     color = "Tratamiento"
   )
 
+# Ajuste del Modelo Bayesiano para Latencia con inflación de 0 Gamma
+fit_bayes_sol <- brm(
+  bf(SOL_ACT ~ Treatment + StudyPeriodWeek + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 | ParticipantID),
+     hu ~ 1), 
+  data = data_nona,
+  family = hurdle_gamma(link = "log"), 
+  chains = 4, 
+  iter = 2000, 
+  cores = 4
+)
+
+summary(fit_bayes_sol)
+
+# Ajuste del Modelo Bayesiano para Eficiencia (Regresión Beta)
+fit_bayes_set1 <- brm(
+  SET1_ACT ~ Treatment + StudyPeriodWeek + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 | ParticipantID),
+  data = data_nona,
+  family = Beta(link = "logit"),
+  chains = 4, iter = 2000, cores = 4
+)
+
+summary(fit_bayes_set1)
+
+# Gráfico de entre simulado y real
+x11()
+pp_check(fit_bayes_sol, nsamples = 50) 
+ x11()
+pp_check(fit_bayes_set1, nsamples = 50)
+
+# Para guardar el modelo bayesiano de SOL_ACT
+#saveRDS(fit_bayes_sol, file = "fit_bayes_sol.rds")
+
+# Guardar el modelo bayesiano de SET_ACT
+#saveRDS(fit_bayes_set1, file = "fit_bayes_set1.rds")
+
+# Para leer:
+fit_bayes_sol <- readRDS("fit_bayes_sol.rds")
+fit_bayes_set1 <- readRDS("fit_bayes_set1.rds")
+
+# R2
+bayes_R2(fit_bayes_sol)
+bayes_R2(fit_bayes_set1)
