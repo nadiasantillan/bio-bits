@@ -3,7 +3,7 @@
 #--------------Autores: -------------------------------#
 #-----FERRAGUTTI - SANTILLAN - VILLARREAL--------------#
 #-------------------Año: 2026 -------------------------#
-setwd("~/unsl/bio/scripts")
+setwd("C:/Users/Usuario/Documents/UNSL/bio-bits")
 #--------------------MODELO BAYESIANO-----------------------------#
 # Scripts auxiliares
 #------------------------------------------------------
@@ -21,7 +21,7 @@ library(brms)
 library(tidyverse)
 library(tidybayes)
 library(performance)
-
+library(ggplot2)
 # ------------------Creacion de la base de datos --------------------------#
 # melatonine_all <- read_excel("data/pmed.1002587.s005.xlsx", sheet = "Combined")
 # melatonine <- melatonine_all[,c("ParticipantID", "Treatment", "Delayed/Not Delayed",
@@ -192,3 +192,51 @@ fit_bayes_set1 <- readRDS("fit_bayes_set1.rds")
 # R2
 bayes_R2(fit_bayes_sol)
 bayes_R2(fit_bayes_set1)
+
+pred_MVR_sol <- fit_bayes_sol %>% 
+  epred_draws(newdata = expand_grid(
+    Treatment = levels(X_clean$Treatment),
+    StudyPeriodWeek = levels(X_clean$StudyPeriodWeek),
+    Work_status = levels(X_clean$Work_status),
+    SOL_ACT_AVG_BASE= seq( min( X_clean$SOL_ACT_AVG_BASE), max(X_clean$SOL_ACT_AVG_BASE), by=1),
+    SET1_ACT_AVG_BASE= seq( min( X_clean$SET1_ACT_AVG_BASE), max(X_clean$SET1_ACT_AVG_BASE), by=1),
+  ), 
+  re_formula = NA)
+
+summary(pred_MVR_sol)
+
+pred_MVR_set <- fit_bayes_set1 %>% 
+  epred_draws(newdata = expand_grid(
+    Treatment = levels(X_clean$Treatment),
+    StudyPeriodWeek = levels(X_clean$StudyPeriodWeek),
+    Work_status = levels(X_clean$Work_status),
+    SOL_ACT_AVG_BASE= seq( min( X_clean$SOL_ACT_AVG_BASE), max(X_clean$SOL_ACT_AVG_BASE), by=1),
+    SET1_ACT_AVG_BASE= seq( min( X_clean$SET1_ACT_AVG_BASE), max(X_clean$SET1_ACT_AVG_BASE), by=1),
+  ), 
+  re_formula = NA)
+summary(pred_MVR_set)
+
+
+x11()
+ggplot(pred_MVR_sol, aes(x = StudyPeriodWeek, y = .epred, color = Treatment)) +
+  stat_pointinterval(position = position_dodge(width = 0.3)) + 
+  theme_minimal() +
+  labs(
+    title = "Efecto esperado de la Melatonina",
+    subtitle = "Predicciones de la media posterior (Modelo Hurdle Gamma)",
+    y = "Valor esperado de SOL_ACT",
+    x = "Semana del Periodo de Estudio",
+    color = "Tratamiento"
+  )
+
+x11()
+ggplot(pred_MVR_set, aes(x = StudyPeriodWeek, y = .epred, color = Treatment)) +
+  stat_pointinterval(position = position_dodge(width = 0.3)) + 
+  theme_minimal() +
+  labs(
+    title = "Efecto esperado de la Melatonina",
+    subtitle = "Predicciones de la media posterior (Modelo Hurdle Gamma)",
+    y = "Valor esperado de SET1_ACT",
+    x = "Semana del Periodo de Estudio",
+    color = "Tratamiento"
+  )
