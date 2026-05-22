@@ -235,7 +235,7 @@ ggplot(pred_MVR_set, aes(x = StudyPeriodWeek, y = .epred, color = Treatment)) +
   theme_minimal() +
   labs(
     title = "Efecto esperado de la Melatonina",
-    subtitle = "Predicciones de la media posterior (Modelo Hurdle Gamma)",
+    subtitle = "Predicciones de la media posterior (Beta)",
     y = "Valor esperado de SET1_ACT",
     x = "Semana del Periodo de Estudio",
     color = "Tratamiento"
