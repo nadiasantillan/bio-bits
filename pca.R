@@ -17,6 +17,7 @@ library(emmeans)
 library(glmmTMB)
 library(ggeffects)
 library(performance)
+library(car)
 # -------------------------------------- PCA ----------------------------------------#  
 melatonine_pca <- function(data, variables_pca, titulo) {
   data_pca <- data[, variables_pca] # menos variables en la entrada del PCA
@@ -73,18 +74,17 @@ wrap_plots(h1, h2)
 shapiro.test(final_pca$pca$x[,"PC1"])
 shapiro.test(final_pca$pca$x[,"PC2"])
 
-
+# Ajuste PC1 y PC2--------------------------------------------------------------
 pca_for_model <- cbind(melatonine, final_pca$pca$x)
 pca_for_model$TratamientoDesc <- factor(pca_for_model$TratamientoDesc)
 
-library(car)
 
 fit_pc1_glmm <- glmmTMB(
   PC1 ~ TratamientoDesc + StudyPeriodWeek + Work_status + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE+ (1 | ParticipantID),
   data = pca_for_model,
   family = gaussian()
 )
-Anova(fit_pc1_glmm) # devianza
+Anova(fit_pc1_glmm)
 summary(fit_pc1_glmm)
 
 fit_pc2_glmm <- glmmTMB(
@@ -96,7 +96,22 @@ Anova(fit_pc2_glmm) # devianza
 
 summary(fit_pc2_glmm)
 
+# Inflación de la varianza------------------------------------------------------
+# vif(fit_pc2_glmm)
 
+check_collinearity(
+  fit_pc1_glmm,
+  component = c('all') # 'all' shows both conditional and zi components
+)
+
+check_collinearity(
+  fit_pc2_glmm,
+  component = c('all') # 'all' shows both conditional and zi components
+)
+
+# R2 ---------------------------------------------------------------------------
+r2(fit_pc1_glmm)
+r2(fit_pc2_glmm)
 
 predicciones_1 <- ggpredict(fit_pc1_glmm, terms = c("StudyPeriodWeek", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"))
 predicciones_2 <- ggpredict(fit_pc2_glmm, terms = c("StudyPeriodWeek", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"))
@@ -106,6 +121,3 @@ summary(predicciones_2)
 x11();plot(predicciones_1)
 x11();plot(predicciones_2)
 
-# R2 ---------------------------------------------------------------------------
-r2(fit_pc1_glmm)
-r2(fit_pc2_glmm)
