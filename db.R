@@ -7,7 +7,15 @@
 # ----------------Ruta del archivo --------------------#
 # Cambiar de acuerdo a la ubicación de los archivos de datos
 # setwd("C:/Users/Usuario/Documents/UNSL/Cuarto Año/Optativa I")
-setwd("~/unsl/bio/scripts")
+
+# Detección de sistema operativo -----------------------------------------------
+ventana <- function(...) {
+  if (.Platform$OS.type == "windows") {
+    window(...)
+  } else {
+    x11(...)
+  }
+}
 
 # Scripts auxiliares
 #------------------------------------------------------
@@ -22,9 +30,14 @@ library(tidyverse)
 dataset_name <- "data/pmed.1002587.s005.xlsx"
 
 melatonine_participante <- read_excel(dataset_name, sheet = "Combined", range="A1:H3735")
+melatonine_lat_subj <- read_excel(dataset_name, sheet = "Combined", range="W1:W3735")
 melatonine_fecha_actigrafo <- read_excel(dataset_name, sheet = "Combined", range="AG1:AG3735")
 melatonine_actigrafo <- read_excel(dataset_name, sheet = "Combined", range="AM1:AT3735")
-melatonine <- cbind(melatonine_participante, melatonine_fecha_actigrafo, melatonine_actigrafo)
+melatonine <- cbind(
+  melatonine_participante, 
+  melatonine_lat_subj, 
+  melatonine_fecha_actigrafo, 
+  melatonine_actigrafo)
 melatonine$anio_mes <- format(melatonine$Date_Onset_ACT, "%Y%m")
 melatonine$anio_mes <- factor(format(melatonine$Date_Onset_ACT, "%Y%m"))
 melatonine$Mes <- factor(month(melatonine$Date_Onset_ACT))
@@ -37,16 +50,15 @@ melatonine$TrabajaDesc <- factor(ifelse(melatonine$`Work/Non-work` == 1, "Obliga
 #--------------------------- Cambio de nombre de variables --------------------------#
 colnames(melatonine)[colnames(melatonine) == "Work/Non-work"] <- "Work_status"
 colnames(melatonine)[colnames(melatonine) == "Delayed/Not Delayed"] <- "Delayed_status"
+#------------------ Conservacion del data frame original ----------------------#
+melatonine_orig <- data.frame(melatonine)
 #--------------------------- Eliminación de NAs ---------------------------#
 variables_modelos <- c('SET1_ACT', 'Work_status', 'Treatment', 'StudyPeriodWeek', 
                         'ParticipantID',"TIB_ACT", "TST_ACT", "SOL_ACT", 
                         "WASO_ACT", "SET2_ACT", "SET3_ACT")
 data_modelos <- melatonine[, variables_modelos]
-x <- na.omit(data_modelos)
-borrados <- na.action(x)
-melatonine <- melatonine[-borrados,]
+melatonine <- melatonine[complete.cases(data_modelos),]
 #------------------------- Corrección SET1_ACT=0 --------------------------#
-
 melatonine <- melatonine %>%
   mutate(SET1_ACT = if_else(SET1_ACT == 0, SE_ACT, SET1_ACT))
 #------------------------- Conversion a porcentaje-------------------------#
