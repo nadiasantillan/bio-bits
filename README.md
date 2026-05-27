@@ -5,6 +5,20 @@
 
 ![Gráfico de Latencias Medidas por el Actígrafo vs Informadas](/img/latencias_minimas.png)
 
+## Modelos Generalizados Mixtos
+
+### Latencia de Sueño
+
+![Latencia de Sueño](/img/model_solact.png)
+
+![Latencia de Sueño Jitter](/img/model_solact_jitter.png)
+
+### Eficiencia del Sueño en el Primer Tercio
+
+![Eficiencia de Sueño](/img/model_set1.png)
+
+![Eficiencia de Sueño Jitter](/img/model_set1_jitter.png)
+
 ## Análisis de Componentes Principales
 
 PCA Semana 1 (Base)
