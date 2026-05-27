@@ -98,3 +98,11 @@ melatonine_base<-convertir_a_factores(melatonine_base)
 #sleepepisodeno
 # Matching Diary with Actigraphy: num  NA NA NA NA NA NA NA NA NA NA ...
 # $ StudyPeriod 
+
+datos26526 <- melatonine %>%
+  mutate(
+    # Primero aseguramos que SOL_SD sea numérica
+    SOL_SD_num = as.numeric(SOL_SD), 
+    # Ahora sí hacemos el reemplazo
+    SOL_ACT = if_else(SOL_ACT < 10, SOL_SD_num, SOL_ACT)
+  )
