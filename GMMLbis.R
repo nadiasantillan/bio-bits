@@ -73,7 +73,7 @@ r2_nakagawa(model_set1, ci = NULL)
 library(sjPlot)
 
 ventana(width = 12, height = 8)
-png("img/model_solact.png", width=800, height = 600)
+# png("img/model_solact.png", width=800, height = 600)
  plot_model(model_solact, 
             type = "pred", 
             terms = c("StudyPeriodWeek", "Treatment"),
@@ -86,8 +86,9 @@ png("img/model_solact.png", width=800, height = 600)
         y = "Latencia de sueño",
         color = "Grupo") +
    theme_minimal()
-dev.off()
+# dev.off()
 ventana(width = 12, height = 8)
+# png("img/model_set1.png", width=800, height = 600)
 plot_model(model_set1, 
            type = "pred", 
            terms = c("StudyPeriodWeek", "Treatment"),
@@ -100,12 +101,13 @@ plot_model(model_set1,
          y = "Eficiencia de sueño en el primer tercio",
   color = "Grupo") +
   theme_minimal()
-
+# dev.off()
 # Grafico similar donde sumamos las observaciones reales al final SOL_ACT.
 
 predicciones_sol <- get_model_data(model_solact, type = "pred", terms = c("StudyPeriodWeek", "Treatment"))
 
 ventana(width = 11, height = 7)
+# png("img/model_solact_jitter.png", width=800, height = 600)
 ggplot() +
   geom_jitter(data = datos26526, 
               aes(x = StudyPeriodWeek, y = SOL_ACT, color = Treatment), 
@@ -125,11 +127,12 @@ ggplot() +
        y = "Latencia de sueño (SOL_ACT)",
        color = "Grupo de Estudio") +
   theme_minimal()
-
+# dev.off()
 # Grafico similar donde sumamos las observaciones reales al final SOL_ACT.
 predicciones_set1 <- get_model_data(model_set1, type = "pred", terms = c("StudyPeriodWeek", "Treatment"))
 
 ventana(width = 11, height = 7)
+# png("img/model_set1_jitter.png", width=800, height = 600)
 ggplot() +
   # Capa de puntos: Datos reales comprimidos de fondo
   geom_jitter(data = datos26526, 
@@ -153,5 +156,5 @@ ggplot() +
        y = "Eficiencia de sueño (SET1_ACT)",
        color = "Grupo de Estudio") +
   theme_minimal()
-
+# dev.off()
 
