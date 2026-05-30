@@ -8,15 +8,6 @@
 # Cambiar de acuerdo a la ubicación de los archivos de datos
 # setwd("C:/Users/Usuario/Documents/UNSL/Cuarto Año/Optativa I")
 
-# Detección de sistema operativo -----------------------------------------------
-ventana <- function(...) {
-  if (.Platform$OS.type == "windows") {
-    window(...)
-  } else {
-    x11(...)
-  }
-}
-
 # Scripts auxiliares
 #------------------------------------------------------
 # Determinación de estación en base a la fecha
@@ -43,6 +34,9 @@ melatonine$anio_mes <- factor(format(melatonine$Date_Onset_ACT, "%Y%m"))
 melatonine$Mes <- factor(month(melatonine$Date_Onset_ACT))
 melatonine$estacion <- factor(sapply(melatonine$Date_Onset_ACT, estacion))
 
+# Remoción de columnas no relevantes
+melatonine[, c("Matching Diary with Actigraphy", "StudyPeriod")] <- NULL
+
 # ------------------------- Variables descriptivas auxiliares --------------------------#
 melatonine$TratamientoDesc <- factor(ifelse(melatonine$Treatment == 1, "Placebo", "Melatonina 0.5 mg"))
 melatonine$TrabajaDesc <- factor(ifelse(melatonine$`Work/Non-work` == 1, "Obligaciones", "Descanso"))
@@ -63,9 +57,9 @@ melatonine <- melatonine %>%
   mutate(SET1_ACT = if_else(SET1_ACT == 0, SE_ACT, SET1_ACT))
 #------------------------- Conversion a porcentaje-------------------------#
 melatonine$SET1_ACT<- melatonine$SET1_ACT/100
-#------------------------- Corrección Ceros -------------------------------
-melatonine <- melatonine %>%
-  mutate(SOL_ACT_NOZERO = if_else(SOL_ACT == 0, 1e-10, SOL_ACT))
+#------------ Eliminar registros sin SOL_ACT ni SOL_SD --------------------
+# melatonine <- melatonine %>%
+#   filter(SOL_ACT > 10 & !is.na(SOL_SD) & as.numeric(SOL_SD) > 10)
 
 #--------------------------- Promedios Semana 0 ---------------------------#
 promedios_base <- melatonine %>%
@@ -84,7 +78,7 @@ melatonine <- melatonine %>%
 
 #------------------------Convertir a factores--------------------#
 convertir_a_factores <- function(melatonine) {
-  melatonine$StudyPeriodWeek <- factor(melatonine$StudyPeriodWeek)
+  melatonine$StudyPeriodWeekFactor <- factor(melatonine$StudyPeriodWeek)
   melatonine$ParticipantID <- factor(melatonine$ParticipantID)
   melatonine$Treatment <- factor(melatonine$Treatment)
   melatonine$Work_status <- factor(melatonine$Work_status)
@@ -94,15 +88,18 @@ convertir_a_factores <- function(melatonine) {
 melatonine<-convertir_a_factores(melatonine)
 melatonine_base<-convertir_a_factores(melatonine_base)
 
-#remover Delayed Status
-#sleepepisodeno
-# Matching Diary with Actigraphy: num  NA NA NA NA NA NA NA NA NA NA ...
-# $ StudyPeriod 
-
-datos26526 <- melatonine %>%
+melatonine <- melatonine %>%
   mutate(
     # Primero aseguramos que SOL_SD sea numérica
     SOL_SD_num = as.numeric(SOL_SD), 
     # Ahora sí hacemos el reemplazo
-    SOL_ACT = if_else(SOL_ACT < 10, SOL_SD_num, SOL_ACT)
+    SOL_ACT_hibrido = if_else(SOL_ACT < 10, SOL_SD_num, SOL_ACT)
+  )
+
+melatonine_base <- melatonine_base %>%
+  mutate(
+    # Primero aseguramos que SOL_SD sea numérica
+    SOL_SD_num = as.numeric(SOL_SD), 
+    # Ahora sí hacemos el reemplazo
+    SOL_ACT_hibrido = if_else(SOL_ACT < 10, SOL_SD_num, SOL_ACT)
   )

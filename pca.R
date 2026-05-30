@@ -8,6 +8,8 @@ setwd("~/unsl/bio/scripts")
 # Scripts auxiliares
 #------------------------------------------------------
 source("./db.R")
+source("./common.R")
+
 # Bibliotecas
 #------------------------------------------------------
 library(ggplot2)
@@ -52,34 +54,34 @@ final_pca <- melatonine_pca(
   variables_pca_reducido,
   "Semanas de tratamiento - Variables no colineales")
 ventana();wrap_plots(ncol=2, nrow=2, initial_pca$plot, base_pca$plot, all_pca$plot, final_pca$plot)
-semana2_pca <- melatonine_pca(melatonine %>% filter(StudyPeriodWeek == 1), variables_pca_reducido, "Semana 2 - Variables no colineales")
-semana3_pca <- melatonine_pca(melatonine %>% filter(StudyPeriodWeek == 2), variables_pca_reducido, "Semana 3 - Variables no colineales")
-semana4_pca <- melatonine_pca(melatonine %>% filter(StudyPeriodWeek == 3), variables_pca_reducido, "Semana 4 - Variables no colineales")
-semana5_pca <- melatonine_pca(melatonine %>% filter(StudyPeriodWeek == 4), variables_pca_reducido, "Semana 5 - Variables no colineales")
+semana2_pca <- melatonine_pca(melatonine %>% filter(StudyPeriodWeekFactor == 1), variables_pca_reducido, "Semana 2 - Variables no colineales")
+semana3_pca <- melatonine_pca(melatonine %>% filter(StudyPeriodWeekFactor == 2), variables_pca_reducido, "Semana 3 - Variables no colineales")
+semana4_pca <- melatonine_pca(melatonine %>% filter(StudyPeriodWeekFactor == 3), variables_pca_reducido, "Semana 4 - Variables no colineales")
+semana5_pca <- melatonine_pca(melatonine %>% filter(StudyPeriodWeekFactor == 4), variables_pca_reducido, "Semana 5 - Variables no colineales")
 ventana()
-png(filename="pca_semana_1.png")
+# png(filename="img/pca_semana_1.png")
 print(base_pca$plot)
-dev.off()
+# dev.off()
 ventana()
-png(filename="pca_semana_2.png")
+# png(filename="img/pca_semana_2.png")
 print(semana2_pca$plot)
-dev.off()
+# dev.off()
 ventana()
-png(filename="pca_semana_3.png")
+# png(filename="img/pca_semana_3.png")
 print(semana3_pca$plot)
-dev.off()
+# dev.off()
 ventana()
-png(filename="pca_semana_4.png")
+# png(filename="img/pca_semana_4.png")
 print(semana4_pca$plot)
-dev.off()
+# dev.off()
 ventana()
-png(filename="pca_semana_5.png")
+# png(filename="img/pca_semana_5.png")
 print(semana5_pca$plot)
-dev.off()
+# dev.off()
 ventana()
-png(filename="pca_tratamiento.png")
+# png(filename="img/pca_tratamiento.png")
 print(final_pca$plot)
-dev.off()
+# dev.off()
 # Correlación entre componentes y variables reales------------------------------
 final_pca$cor
 # Proporciones varianza explicada-----------------------------------------------
@@ -105,7 +107,7 @@ pca_for_model <- cbind(melatonine, final_pca$pca$x)
 pca_for_model$TratamientoDesc <- factor(pca_for_model$TratamientoDesc)
 
 fit_pc1_glmm <- glmmTMB(
-  PC1 ~ TratamientoDesc + StudyPeriodWeek + Work_status + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE+ (1 | ParticipantID),
+  PC1 ~ TratamientoDesc + StudyPeriodWeekFactor + Work_status + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE+ (1 | ParticipantID),
   data = pca_for_model,
   family = gaussian()
 )
@@ -113,7 +115,7 @@ Anova(fit_pc1_glmm)
 summary(fit_pc1_glmm)
 
 fit_pc2_glmm <- glmmTMB(
-  PC2 ~ TratamientoDesc + StudyPeriodWeek + Work_status + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE+ (1 | ParticipantID),
+  PC2 ~ TratamientoDesc + StudyPeriodWeekFactor + Work_status + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE+ (1 | ParticipantID),
   data = pca_for_model,
   family = gaussian()
 )
@@ -136,8 +138,8 @@ check_collinearity(
 r2_nakagawa(fit_pc1_glmm)
 r2_nakagawa(fit_pc2_glmm)
 
-predicciones_1 <- ggpredict(fit_pc1_glmm, terms = c("StudyPeriodWeek", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"))
-predicciones_2 <- ggpredict(fit_pc2_glmm, terms = c("StudyPeriodWeek", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"))
+predicciones_1 <- ggpredict(fit_pc1_glmm, terms = c("StudyPeriodWeekFactor", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"))
+predicciones_2 <- ggpredict(fit_pc2_glmm, terms = c("StudyPeriodWeekFactor", "TratamientoDesc", "SET1_ACT_AVG_BASE", "Work_status"))
 
 summary(predicciones_1)
 summary(predicciones_2)

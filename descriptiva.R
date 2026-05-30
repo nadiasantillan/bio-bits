@@ -8,6 +8,7 @@
 # Scripts auxiliares
 #------------------------------------------------------
 source("./db.R")
+source("./common.R")
 
 # Bibliotecas
 #------------------------------------------------------
@@ -133,7 +134,10 @@ latencia_minima$SOL_SD <- as.numeric(latencia_minima$SOL_SD)
 latencia_minima$dif <- (latencia_minima$SOL_SD - latencia_minima$SOL_ACT)
 
 ventana()
+png("img/latencias_minimas.png", width = 600, height = 600)
 ggplot(latencia_minima, aes(x = SOL_ACT, y = SOL_SD)) +
   geom_point(fill = "steelblue") +
   labs(title="Latencia actígrafo <= 10 vs Latencia informada", y = "Latencia Informada por Sujeto", x = "Latencia Actígrafo")
+dev.off()
 theme_minimal()       
+
