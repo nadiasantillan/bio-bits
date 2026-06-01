@@ -35,7 +35,7 @@ melatonine$Mes <- factor(month(melatonine$Date_Onset_ACT))
 melatonine$estacion <- factor(sapply(melatonine$Date_Onset_ACT, estacion))
 
 # Remoción de columnas no relevantes
-melatonine[, c("Matching Diary with Actigraphy", "StudyPeriod")] <- NULL
+melatonine[, c("Matching Diary with Actigraphy")] <- NULL
 
 # ------------------------- Variables descriptivas auxiliares --------------------------#
 melatonine$TratamientoDesc <- factor(ifelse(melatonine$Treatment == 1, "Placebo", "Melatonina 0.5 mg"))
@@ -78,6 +78,7 @@ melatonine <- melatonine %>%
 
 #------------------------Convertir a factores--------------------#
 convertir_a_factores <- function(melatonine) {
+  melatonine$StudyPeriod <- factor(melatonine$StudyPeriod)
   melatonine$StudyPeriodWeekFactor <- factor(melatonine$StudyPeriodWeek)
   melatonine$ParticipantID <- factor(melatonine$ParticipantID)
   melatonine$Treatment <- factor(melatonine$Treatment)
@@ -96,3 +97,10 @@ melatonine <- melatonine %>%
     SOL_ACT_hibrido = if_else(SOL_ACT < 10, SOL_SD_num, SOL_ACT)
   )
 
+melatonine_base <- melatonine_base %>%
+  mutate(
+    # Primero aseguramos que SOL_SD sea numérica
+    SOL_SD_num = as.numeric(SOL_SD), 
+    # Ahora sí hacemos el reemplazo
+    SOL_ACT_hibrido = if_else(SOL_ACT < 10, SOL_SD_num, SOL_ACT)
+  )

@@ -17,11 +17,12 @@ library(patchwork)
 library(ggbiplot)
 library(emmeans)
 library(glmmTMB)
+library(lme4)
 library(ggeffects)
 library(performance)
 library(car)
-#install.packages("gt")
-library(gt)
+# install.packages("DHARMa")
+library(DHARMa)
 # -------------------------------------- PCA ----------------------------------------#  
 melatonine_pca <- function(data, variables_pca, titulo) {
   data_pca <- data[, variables_pca]
@@ -113,9 +114,11 @@ ajuste <- function(formula1, formula2, pca, original) {
   pca_for_model <- cbind(original, pca$x)
   pca_for_model$WorkDesc <- factor(pca_for_model$TratamientoDesc)
   pca_for_model$WorkDesc <- factor(if_else(pca_for_model$Work_status == 1, "Obligaciones", "Descanso"))
-  model_pc1 <- glmmTMB(formula1, data = pca_for_model, family = gaussian())
+  # model_pc1 <- glmmTMB(formula1, data = pca_for_model, family = gaussian())
+  model_pc1 <- lmer(formula1, data = pca_for_model)
 
-  model_pc2 <- glmmTMB(formula2, data = pca_for_model, family = gaussian())
+  # model_pc2 <- glmmTMB(formula2, data = pca_for_model, family = gaussian())
+  model_pc2 <- lmer(formula2, data = pca_for_model)
 
   fit1 <- list(
     model=model_pc1, 
@@ -164,6 +167,17 @@ ajuste_anidado_factor <- ajuste(
   melatonine
 )
 
+ajuste_articulo <- ajuste(
+  PC1 ~ TratamientoDesc * StudyPeriodWeek  + (1 + StudyPeriodWeek|ParticipantID),
+  PC2 ~ TratamientoDesc * StudyPeriodWeek  + (1 + StudyPeriodWeek|ParticipantID),
+  all_pca$pca, 
+  melatonine_all
+)
+
+summary(ajuste_articulo$fit1$model)
+print(ajuste_articulo$fit2$anova)
+print(ajuste_articulo$fit1$r2)
+print(ajuste_articulo$fit2$r2)
 comp <- data.frame(Formula=c(
   "TratamientoDesc * StudyPeriodWeek + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 | ParticipantID)",
   "TratamientoDesc * StudyPeriodWeek + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 + StudyPeriodWeek | ParticipantID)",
@@ -199,6 +213,20 @@ comp <- data.frame(Formula=c(
 
 # Comparación de modelos--------------------------------------------------------
 comp
+
+print(ajuste_interaccion_numerica$fit2$vif)
+# Residuos ---------------------------------------------------------------------
+res_pc1 <- residuals(ajuste_interaccion_numerica_pendiente$fit1$model)
+res_pc2 <- residuals(ajuste_interaccion_numerica_pendiente$fit2$model)
+ventana(50,20)
+par(mfrow=c(2,2))
+plot(res_pc1)
+qqnorm(res_pc1)
+qqline(res_pc1)
+plot(res_pc2)
+qqnorm(res_pc2)
+qqline(res_pc2)
+
 
 # Gŕaficos----------------------------------------------------------------------
 predicciones_1 <- ggpredict(
