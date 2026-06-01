@@ -37,7 +37,8 @@ melatonine_pca <- function(data, variables_pca, titulo) {
            varname.adjust = 1.2,
            ellipse = T, 
            circle = F) +
-    labs(title = titulo)
+    labs(title = titulo) +
+    coord_cartesian(xlim = c(-5, 5), ylim = c(-5, 5))
     theme_minimal() 
     
     # Proporciones varianza explicada-------------------------------------------
@@ -219,14 +220,15 @@ print(ajuste_interaccion_numerica$fit2$vif)
 res_pc1 <- residuals(ajuste_interaccion_numerica_pendiente$fit1$model)
 res_pc2 <- residuals(ajuste_interaccion_numerica_pendiente$fit2$model)
 ventana(50,20)
-par(mfrow=c(2,2))
+par(mfrow=c(2,3))
 plot(res_pc1)
 qqnorm(res_pc1)
 qqline(res_pc1)
+hist(res_pc1)
 plot(res_pc2)
 qqnorm(res_pc2)
 qqline(res_pc2)
-
+hist(res_pc2)
 
 # Gŕaficos----------------------------------------------------------------------
 predicciones_1 <- ggpredict(
