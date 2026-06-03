@@ -6,6 +6,7 @@
   
   # ----------------Ruta del archivo --------------------#
 source("./db.R")
+source("./common.R")
 #----------------------------NUEVO 26-05 -----------------------------------------
 
 ################################################################################
@@ -34,7 +35,8 @@ print(vif_solact)
 
 
 model_set1 <- glmmTMB(
-  SET1_ACT ~ Treatment + StudyPeriodWeek +SOL_ACT_AVG_BASE +SET1_ACT_AVG_BASE  + (1 | ParticipantID),
+  # Valor_Z ~ Metrica + Work_status + Treatment * Semana_Num + (1 | ParticipantID | Mes | estacion), hacer con sol_act y se_act
+  SET1_ACT ~ Treatment + SOL_ACT_AVG_BASE +SET1_ACT_AVG_BASE  + (1 | ParticipantID),
   # Valor_Z ~ Metrica + Work_status + Treatment * Semana_Num + (1 | ParticipantID | Mes | estacion), hacer con sol_act y se_act
   #sol_act y se_act
   # interacciones entre tratamiento y semana de tratamiento

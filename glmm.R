@@ -186,14 +186,16 @@ plot_model(ajuste4$fit_set$model,
 predicciones_sol <- get_model_data(ajuste4$fit_sol$model, type = "pred", terms = c("StudyPeriodWeekFactor", "Treatment"))
 
 ventana(width = 11, height = 7)
-# png("img/model_solact_jitter.png", width=800, height = 600)
+# png("img/model_solsd_jitter.png", width=800, height = 600)
 ggplot() +
   geom_jitter(data = melatonine_solse, 
               aes(x = StudyPeriodWeekFactor, y = SOL_SD_num, color = Treatment), 
               alpha = 0.18, width = 0.15, height = 0) +
-  geom_line(data = predicciones_sol, 
-            aes(x = x, y = predicted, color = group, group = group), 
-            linewidth = 1.3) +
+  # geom_line(data = predicciones_sol, 
+  #           aes(x = x, y = predicted, color = group, group = group), 
+  #           linewidth = 1.3) +
+  geom_point(data = predicciones_sol, aes(x = x, y = predicted, color = group, group = group)) + 
+  geom_errorbar(data = predicciones_sol, aes(x=x, ymin = conf.low, ymax = conf.high, color = group, group = group), size=1,width = 0.4) +
   geom_ribbon(data = predicciones_sol, 
               aes(x = x, ymin = conf.low, ymax = conf.high, fill = group, group = group), 
               alpha = 0.15, show.legend = FALSE) +
@@ -218,9 +220,12 @@ ggplot() +
               aes(x = StudyPeriodWeek, y = SET1_ACT, color = Treatment), 
               alpha = 0.18, width = 0.15, height = 0) +
   # Capa de líneas: Predicciones estimadas por el modelo Beta
-  geom_line(data = predicciones_set1, 
-            aes(x = x, y = predicted, color = group, group = group), 
-            linewidth = 1.3) +
+  # geom_line(data = predicciones_set1, 
+  #           aes(x = x, y = predicted, color = group, group = group), 
+  #           linewidth = 1.3) +
+  # Capa de barras de errores: Predicciones estimadas por el modelo Beta
+  geom_point(data = predicciones_set1, aes(x = x, y = predicted, color = group, group = group)) + 
+  geom_errorbar(data = predicciones_set1, aes(x=x, ymin = conf.low, ymax = conf.high, color = group, group = group), size=1,width = 0.4) +
   # Capa de áreas: Bandas de Intervalos de Confianza al 95%
   geom_ribbon(data = predicciones_set1, 
               aes(x = x, ymin = conf.low, ymax = conf.high, fill = group, group = group), 
