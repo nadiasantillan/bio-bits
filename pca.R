@@ -4,7 +4,6 @@
 #-----FERRAGUTTI - SANTILLAN - VILLARREAL--------------#
 #-------------------Año: 2026 -------------------------#
 
-setwd("~/unsl/bio/scripts")
 # Scripts auxiliares
 #------------------------------------------------------
 source("./db.R")
@@ -22,7 +21,9 @@ library(ggeffects)
 library(performance)
 library(car)
 # install.packages("DHARMa")
-library(DHARMa)
+# library(DHARMa)
+# install.packages("vegan")
+library(vegan)
 # -------------------------------------- PCA ----------------------------------------#  
 melatonine_pca <- function(data, variables_pca, titulo) {
   data_pca <- data[, variables_pca]
@@ -33,12 +34,13 @@ melatonine_pca <- function(data, variables_pca, titulo) {
            groups=factor(data$TratamientoDesc),
            point.size=1,
            varname.size = 4, 
-           varname.color = "firebrick",
+           varname.color = "black",
            varname.adjust = 1.2,
            ellipse = T, 
            circle = F) +
-    labs(title = titulo) +
-    coord_cartesian(xlim = c(-5, 5), ylim = c(-5, 5))
+    labs(title = titulo, colour = "Tratamiento", fill="Tratamiento") +
+    coord_cartesian(xlim = c(-5, 5), ylim = c(-5, 5)) +
+    scale_color_manual(values = c("Melatonina 0.5 mg" = "darkorange3", "Placebo" = "darkorchid3"))
     theme_minimal() 
     
     # Proporciones varianza explicada-------------------------------------------
@@ -46,18 +48,18 @@ melatonine_pca <- function(data, variables_pca, titulo) {
     
     # Histogramas PC1 y PC2 ----------------------------------------------------
     h1 <- ggplot(pca$x, aes(x = PC1)) +
-      geom_histogram(color="gray", fill="red4") +
+      geom_histogram(color="gray", fill="darkorange3") +
       labs(title = "Componente Principal 1", x = paste("PC1", var_prop[1], "%"), y = "Frecuencia")
     h2 <- ggplot(pca$x, aes(x = PC2)) +
-      geom_histogram(color="gray", fill="green4") +
+      geom_histogram(color="gray", fill="darkorchid3") +
       labs(title = "Componente Principal 2", x = paste("PC2", var_prop[2], "%"), y = "Frecuencia")
     
       
   return(list(pca=pca, biplot=biplot, hist1=h1, hist2=h2, cor=cor(data_pca, pca$x)))
 }
 
-variables_pca_todas <- c("TIB_ACT", "TST_ACT", "SOL_ACT", "SET1_ACT", "WASO_ACT", "SET2_ACT", "SET3_ACT")
-variables_pca_reducido <- c("TIB_ACT", "TST_ACT", "SOL_ACT", "SET1_ACT", "WASO_ACT")
+variables_pca_todas <- c("TIB_ACT", "TST_ACT", "SET1_ACT", "WASO_ACT", "SET2_ACT", "SET3_ACT", "SOL_SD_num")
+variables_pca_reducido <- c("TIB_ACT", "TST_ACT", "SOL_SD_num", "SET1_ACT", "WASO_ACT")
 
 melatonine_all <- rbind(melatonine_base, melatonine)
 
@@ -69,42 +71,31 @@ final_pca <- melatonine_pca(
   melatonine, 
   variables_pca_reducido,
   "Semanas de tratamiento - Variables no colineales")
-ventana();wrap_plots(ncol=2, nrow=2, initial_pca$biplot, base_pca$biplot, all_pca$biplot, final_pca$biplot)
-semana2_pca <- melatonine_pca(melatonine %>% filter(StudyPeriodWeekFactor == 1), variables_pca_reducido, "Semana 2 - Variables no colineales")
-semana3_pca <- melatonine_pca(melatonine %>% filter(StudyPeriodWeekFactor == 2), variables_pca_reducido, "Semana 3 - Variables no colineales")
-semana4_pca <- melatonine_pca(melatonine %>% filter(StudyPeriodWeekFactor == 3), variables_pca_reducido, "Semana 4 - Variables no colineales")
 semana5_pca <- melatonine_pca(melatonine %>% filter(StudyPeriodWeekFactor == 4), variables_pca_reducido, "Semana 5 - Variables no colineales")
-ventana()
-# png(filename="img/pca_semana_1.png")
-print(base_pca$biplot)
-# dev.off()
-ventana()
-# png(filename="img/pca_semana_2.png")
-print(semana2_pca$biplot)
-# dev.off()
-ventana()
-# png(filename="img/pca_semana_3.png")
-print(semana3_pca$biplot)
-# dev.off()
-ventana()
-# png(filename="img/pca_semana_4.png")
-print(semana4_pca$biplot)
-# dev.off()
-ventana()
-# png(filename="img/pca_semana_5.png")
-print(semana5_pca$biplot)
-# dev.off()
-ventana()
-# png(filename="img/pca_tratamiento.png")
-print(final_pca$biplot)
-# dev.off()
+
+png(filename="img/pca_inicial_colineales.png", width = 1000, height = 400)
+wrap_plots(ncol=2, initial_pca$biplot, all_pca$biplot)
+dev.off()
+
+png(filename="img/pca_base_vs_tratamiento.png", width = 1500, height = 400)
+wrap_plots(ncol=3, base_pca$biplot, final_pca$biplot, semana5_pca$biplot)
+dev.off()
+
+ventana();wrap_plots(ncol=2, nrow=2, initial_pca$biplot, base_pca$biplot, all_pca$biplot, final_pca$biplot)
+
 # Correlación entre componentes y variables reales------------------------------
 final_pca$cor
 
-# Distribucion componentes------------------------------------------------------
+# Análisis de Procrustes -------------------------------------------------------
+# procrustes(base_pca$pca, final_pca$pca)
+# No funciona como está: Matrices have different number of rows: 745 and 2345
+
+# Distribución componentes------------------------------------------------------
 ventana(50,20)
 par(mfrow=c(1,2))
+# png(filename="img/pca_distribucion.png", width = 800, height = 400)
 wrap_plots(final_pca$hist1, final_pca$hist2)
+# dev.off()
 
 # Tests de normalidad-----------------------------------------------------------
 shapiro.test(final_pca$pca$x[,"PC1"])
@@ -137,7 +128,7 @@ ajuste <- function(formula1, formula2, pca, original) {
 }
 
 # Set1~ trat*semananumerica +……(1|Parcipante)
-ajuste_interaccion_numerica <- ajuste(
+ajuste1 <- ajuste(
   PC1 ~ TratamientoDesc * StudyPeriodWeek + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 | ParticipantID),
   PC2 ~ TratamientoDesc * StudyPeriodWeek + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 | ParticipantID),
   final_pca$pca, 
@@ -145,7 +136,7 @@ ajuste_interaccion_numerica <- ajuste(
 )
 
 # Set1~ trat*semananumerica +……(1 +semananumerica | Parcipante)
-ajuste_interaccion_numerica_pendiente <- ajuste(
+ajuste2 <- ajuste(
   PC1 ~ TratamientoDesc * StudyPeriodWeek + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 + StudyPeriodWeek | ParticipantID),
   PC2 ~ TratamientoDesc * StudyPeriodWeek + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 + StudyPeriodWeek  | ParticipantID),
   final_pca$pca, 
@@ -153,7 +144,7 @@ ajuste_interaccion_numerica_pendiente <- ajuste(
 )
 
 # Set1~ trat +……(1 +semananumerica | Parcipante)
-ajuste_pendiente <- ajuste(
+ajuste3 <- ajuste(
   PC1 ~ TratamientoDesc + StudyPeriodWeek + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 + StudyPeriodWeek | ParticipantID),
   PC2 ~ TratamientoDesc + StudyPeriodWeek + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 + StudyPeriodWeek  | ParticipantID),
   final_pca$pca, 
@@ -161,67 +152,69 @@ ajuste_pendiente <- ajuste(
 )
 
 # Set1~ trat+……(1  | Parcipante/semanaFactor)
-ajuste_anidado_factor <- ajuste(
-  PC1 ~ TratamientoDesc + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 | ParticipantID/StudyPeriodWeekFactor),
-  PC2 ~ TratamientoDesc + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 | ParticipantID/StudyPeriodWeekFactor),
+ajuste4 <- ajuste(
+  PC1 ~ TratamientoDesc + StudyPeriodWeekFactor + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 | ParticipantID/StudyPeriodWeekFactor),
+  PC2 ~ TratamientoDesc + StudyPeriodWeekFactor + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 | ParticipantID/StudyPeriodWeekFactor),
   final_pca$pca, 
   melatonine
 )
 
-ajuste_articulo <- ajuste(
-  PC1 ~ TratamientoDesc * StudyPeriodWeek  + (1 + StudyPeriodWeek|ParticipantID),
-  PC2 ~ TratamientoDesc * StudyPeriodWeek  + (1 + StudyPeriodWeek|ParticipantID),
-  all_pca$pca, 
-  melatonine_all
-)
+# ajuste_articulo <- ajuste(
+#   PC1 ~ TratamientoDesc * StudyPeriodWeek  + (1 | ParticipantID),
+#   PC2 ~ TratamientoDesc * StudyPeriodWeek  + (1 | ParticipantID),
+#   all_pca$pca, 
+#   melatonine_all
+# )
 
-summary(ajuste_articulo$fit1$model)
-print(ajuste_articulo$fit2$anova)
-print(ajuste_articulo$fit1$r2)
-print(ajuste_articulo$fit2$r2)
+
 comp <- data.frame(Formula=c(
   "TratamientoDesc * StudyPeriodWeek + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 | ParticipantID)",
   "TratamientoDesc * StudyPeriodWeek + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 + StudyPeriodWeek | ParticipantID)",
   "TratamientoDesc + StudyPeriodWeek + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 + StudyPeriodWeek | ParticipantID)",
   "TratamientoDesc + WorkDesc + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 | ParticipantID/StudyPeriodWeekFactor)"), 
-  PC1_R2_Condicional=c(ajuste_interaccion_numerica$fit1$r2$R2_conditional,
-        ajuste_interaccion_numerica_pendiente$fit1$r2$R2_conditional,
-        ajuste_pendiente$fit1$r2$R2_conditional,
-        ajuste_anidado_factor$fit1$r2$R2_conditional),
-  PC1_R2_Marginal=c(ajuste_interaccion_numerica$fit1$r2$R2_marginal,
-                       ajuste_interaccion_numerica_pendiente$fit1$r2$R2_marginal,
-                       ajuste_pendiente$fit1$r2$R2_marginal,
-                       ajuste_anidado_factor$fit1$r2$R2_marginal),
+  PC1_R2_Condicional=c(ajuste1$fit1$r2$R2_conditional,
+                       ajuste2$fit1$r2$R2_conditional,
+                       ajuste3$fit1$r2$R2_conditional,
+                       ajuste4$fit1$r2$R2_conditional),
+  PC1_R2_Marginal=c(ajuste1$fit1$r2$R2_marginal,
+                       ajuste2$fit1$r2$R2_marginal,
+                       ajuste3$fit1$r2$R2_marginal,
+                       ajuste4$fit1$r2$R2_marginal),
   PC1_BIC=c(
-    BIC(ajuste_interaccion_numerica$fit1$model),
-    BIC(ajuste_interaccion_numerica_pendiente$fit1$model),
-    BIC(ajuste_pendiente$fit1$model),
-    BIC(ajuste_anidado_factor$fit1$model)),
-  PC2_R2_Condicional=c(ajuste_interaccion_numerica$fit2$r2$R2_conditional,
-                       ajuste_interaccion_numerica_pendiente$fit2$r2$R2_conditional,
-                       ajuste_pendiente$fit2$r2$R2_conditional,
-                       ajuste_anidado_factor$fit2$r2$R2_conditional),
-  PC2_R2_Marginal=c(ajuste_interaccion_numerica$fit2$r2$R2_marginal,
-                    ajuste_interaccion_numerica_pendiente$fit2$r2$R2_marginal,
-                    ajuste_pendiente$fit2$r2$R2_marginal,
-                    ajuste_anidado_factor$fit2$r2$R2_marginal),
+    BIC(ajuste1$fit1$model),
+    BIC(ajuste2$fit1$model),
+    BIC(ajuste3$fit1$model),
+    BIC(ajuste4$fit1$model)),
+  PC2_R2_Condicional=c(ajuste1$fit2$r2$R2_conditional,
+                       ajuste2$fit2$r2$R2_conditional,
+                       ajuste3$fit2$r2$R2_conditional,
+                       ajuste4$fit2$r2$R2_conditional),
+  PC2_R2_Marginal=c(ajuste1$fit2$r2$R2_marginal,
+                    ajuste2$fit2$r2$R2_marginal,
+                    ajuste3$fit2$r2$R2_marginal,
+                    ajuste4$fit2$r2$R2_marginal),
   PC2_BIC=c(
-    BIC(ajuste_interaccion_numerica$fit2$model),
-    BIC(ajuste_interaccion_numerica_pendiente$fit2$model),
-    BIC(ajuste_pendiente$fit2$model),
-    BIC(ajuste_anidado_factor$fit2$model))
+    BIC(ajuste1$fit2$model),
+    BIC(ajuste2$fit2$model),
+    BIC(ajuste3$fit2$model),
+    BIC(ajuste4$fit2$model))
 )
 
 # Comparación de modelos--------------------------------------------------------
 comp
 
-print(ajuste_interaccion_numerica$fit2$vif)
+# Anova mejor modelo -----------------------------------------------------------
+print(ajuste4$fit2$anova)
+# Inflación de la varianza - Mejor modelo --------------------------------------
+print(ajuste4$fit1$vif)
+print(ajuste4$fit2$vif)
 # Residuos ---------------------------------------------------------------------
-res_pc1 <- residuals(ajuste_interaccion_numerica_pendiente$fit1$model)
-res_pc2 <- residuals(ajuste_interaccion_numerica_pendiente$fit2$model)
+res_pc1 <- residuals(ajuste4$fit1$model)
+res_pc2 <- residuals(ajuste4$fit2$model)
 ventana(50,20)
+png("img/residuos.png", width = 1000, height = 800)
 par(mfrow=c(2,3))
-plot(res_pc1)
+plot(res_pc1, main =)
 qqnorm(res_pc1)
 qqline(res_pc1)
 hist(res_pc1)
@@ -229,17 +222,23 @@ plot(res_pc2)
 qqnorm(res_pc2)
 qqline(res_pc2)
 hist(res_pc2)
-
+dev.off()
 # Gŕaficos----------------------------------------------------------------------
 predicciones_1 <- ggpredict(
-  ajuste_interaccion_numerica$fit1$model, 
-  terms = c("StudyPeriodWeek", "TratamientoDesc", "SET1_ACT_AVG_BASE", "WorkDesc"))
+  ajuste4$fit1$model, 
+  terms = c("StudyPeriodWeekFactor", "TratamientoDesc", "WorkDesc"))
 predicciones_2 <- ggpredict(
-  ajuste_interaccion_numerica$fit2$model, 
-  terms = c("StudyPeriodWeek", "TratamientoDesc", "WorkDesc", "SET1_ACT_AVG_BASE"))
+  ajuste4$fit2$model, 
+  terms = c("StudyPeriodWeekFactor", "TratamientoDesc", "WorkDesc"))
 
 summary(predicciones_1)
 summary(predicciones_2)
-ventana();plot(predicciones_1)
-ventana();plot(predicciones_2)
+ventana();
+png("img/ajuste_pc1.png", width = 1000, height = 800)
+plot(predicciones_1)
+dev.off()
+ventana();
+png("img/ajuste_pc2.png", width = 1000, height = 800)
+plot(predicciones_2)
+dev.off()
 

@@ -95,7 +95,8 @@ melatonine <- melatonine %>%
     SOL_SD_num = as.numeric(SOL_SD), 
     # Ahora sí hacemos el reemplazo
     SOL_ACT_hibrido = if_else(SOL_ACT < 10, SOL_SD_num, SOL_ACT)
-  )
+  ) %>%
+  filter(!is.na(SOL_SD_num) & SOL_SD_num > 0 )
 
 melatonine_base <- melatonine_base %>%
   mutate(
@@ -103,4 +104,6 @@ melatonine_base <- melatonine_base %>%
     SOL_SD_num = as.numeric(SOL_SD), 
     # Ahora sí hacemos el reemplazo
     SOL_ACT_hibrido = if_else(SOL_ACT < 10, SOL_SD_num, SOL_ACT)
-  )
+  ) %>%
+  filter(!is.na(SOL_SD_num) & SOL_SD_num > 0 )
+
