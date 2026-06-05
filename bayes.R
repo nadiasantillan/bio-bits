@@ -128,7 +128,7 @@ str(X_clean)
 
 # Use el modelo de bayes fit_multi
 # Calculo de las media posterior a partir del modelo
-str(pred_MVR)
+
 pred_MVR <- fit_multi %>% 
   epred_draws(newdata = expand_grid(
     Treatment = levels(X_clean$Treatment),
@@ -168,7 +168,7 @@ ggplot(mutated_pred[mutated_pred$.category=="SET1ACT",], aes(y = StudyPeriodWeek
   # theme_minimal() +
   labs(
     title = "Efecto esperado de la Melatonina ",
-    subtitle = "Predicciones de la media posterior de la eficiencia del sueli",
+    subtitle = "Predicciones de la media posterior de la eficiencia del sueño",
     x = "Valor esperado SET1_ACT",
     y = "Semana del Periodo de Estudio",
     color = "Tratamiento"
