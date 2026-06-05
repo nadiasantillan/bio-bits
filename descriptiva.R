@@ -56,7 +56,7 @@ wrap_plots(ncol=2, nrow=2,
 
 # ------------------- Diagramas de caja e histogramas para las variables continuas ------------------#
 ventana(40,30)
-# png(filename="img/distribuciones_continuas.png", width=800, height=900)
+png(filename="img/distribuciones_continuas.png", width=800, height=900)
 wrap_plots(ncol = 2, nrow = 3,
            ggplot(data.frame(y = melatonine_orig$SOL_ACT), aes(y = y)) +
               geom_boxplot(fill = "darkorange2") +
@@ -64,28 +64,32 @@ wrap_plots(ncol = 2, nrow = 3,
               theme_graficos,
            ggplot(data.frame(x = melatonine_orig$SOL_ACT), aes(x = x)) +
              geom_histogram(fill = "darkorange2", col = "white") +
-             labs(title = "Latencia de sueño - Distribución", x = "Latencia de inicio de sueño - SOL (minutos)")+
+             labs(title = "Latencia de sueño - Distribución", x = "Latencia de inicio de sueño - SOL (minutos)",
+                  y = "Frecuencia")+
              coord_cartesian(xlim = c(0, 300)) +
              theme_graficos, 
            ggplot(data.frame(y = as.numeric(melatonine_orig$SOL_SD)), aes(y = y)) +
              geom_boxplot(fill = "darkorange2") +
-             labs(title = "Latencia de sueño informada - Valores Atípicos", y = "Latencia de inicio de sueño - SOL (minutos)")+
+             labs(title = "Latencia de sueño informada - Valores Atípicos", y = "Latencia de inicio de sueño - SOL_SD (minutos)")+
              theme_graficos,
            ggplot(data.frame(x = as.numeric(melatonine_orig$SOL_SD)), aes(x = x)) +
              geom_histogram(fill = "darkorange2", col = "white") +
-             labs(title = "Latencia de sueño informada - Distribución", x = "Latencia de inicio de sueño - SOL (minutos)")+
+             labs(title = "Latencia de sueño informada - Distribución", 
+                  x = "Latencia de inicio de sueño - SOL_SD (minutos)",
+                  y = "Frecuencia")+
              coord_cartesian(xlim = c(0, 300)) +
              theme_graficos, 
            ggplot(data.frame(y = melatonine_orig$SET1_ACT), aes(y = y)) +
              geom_boxplot(fill = "darkorange2") +
-             labs(title = "Eficiencia de sueño - Valores Atípicos", y = "Latencia de inicio de sueño - SOL (minutos)")+
+             labs(title = "Eficiencia del sueño - Valores Atípicos", y = "Eficiencia del sueño - SET1 (%)")+
              theme_graficos,
            ggplot(data.frame(x = melatonine_orig$SET1_ACT), aes(x = x)) +
              geom_histogram(fill = "darkorange2", col = "white") +
-             labs(title = "Eficiencia de sueño - Distribución", x = "Latencia de inicio de sueño - SOL (minutos)")+
+             labs(title = "Eficiencia del sueño - Distribución", x = "Eficiencia del sueño - SET1 (%)",
+                  y = "Frecuencia")+
              theme_graficos 
 ) + plot_layout(widths = c(1, 2))
-# dev.off()
+dev.off()
 
 # ------------------- Varianzas por tratamiento y semana -------------------------------#
 ventana()
@@ -190,3 +194,5 @@ ggplot(data.frame(x = melatonine_orig$SOL_ACT, y = as.numeric(melatonine_orig$SO
   labs(title="Latencia actígrafo vs Latencia informada", y = "Latencia Informada por Sujeto", x = "Latencia Actígrafo")
   theme_graficos
 # dev.off()
+  
+  

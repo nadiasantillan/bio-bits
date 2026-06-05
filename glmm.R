@@ -242,3 +242,18 @@ ggplot() +
   theme_minimal()
 # dev.off()
 
+# Residuos ---------------------------------------------------------------------
+res_set <- residuals(ajuste4$fit_set$model)
+res_sol <- residuals(ajuste4$fit_sol$model)
+ventana(50,20)
+png("img/residuos_glmm.png", width = 1000, height = 800)
+par(mfrow=c(2,3))
+plot(res_sol, main = "Residuos Ajuste SOL_SD", xlab="Observación", ylab="Residuo")
+qqnorm(res_sol, main = "QQ Residuos Ajuste SOL_SD", xlab="Cuantiles Normales", ylab="Cuantiles Residuos")
+qqline(res_sol)
+hist(res_sol, main="Distribución de residuos SOL_SD", xlab="Residuos", ylab="Frecuencia")
+plot(res_set, main = "Residuos Ajuste SET1", xlab="Observación", ylab="Residuo")
+qqnorm(res_set, main = "QQ Ajuste SET1", xlab="Cuantiles Normales", ylab="Cuantiles Residuos")
+qqline(res_set)
+hist(res_set, main="Distribución de residuos SET1", xlab="Residuos", ylab="Frecuencia")
+dev.off()

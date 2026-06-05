@@ -107,3 +107,7 @@ melatonine_base <- melatonine_base %>%
   ) %>%
   filter(!is.na(SOL_SD_num) & SOL_SD_num > 0 )
 
+
+melatonine_orig%>%
+  filter(StudyPeriodWeek==4 & TratamientoDesc=="Placebo") %>%
+  summarise(unique_count = n_distinct(ParticipantID))

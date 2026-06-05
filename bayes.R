@@ -3,7 +3,6 @@
 #--------------Autores: -------------------------------#
 #-----FERRAGUTTI - SANTILLAN - VILLARREAL--------------#
 #-------------------Año: 2026 -------------------------#
-setwd("C:/Users/Usuario/Documents/UNSL/bio-bits")
 #--------------------MODELO BAYESIANO-----------------------------#
 # Scripts auxiliares
 #------------------------------------------------------
@@ -11,7 +10,7 @@ source("./db.R")
 # Bibliotecas
 #------------------------------------------------------
 # install.packages("brms")
-setwd("C:/Users/Usuario/Documents/UNSL/Cuarto Año/Optativa I")
+# setwd("C:/Users/Usuario/Documents/UNSL/Cuarto Año/Optativa I")
 
 # ------------------Carga de Librerias----------------------------------------#
 library(readxl)
@@ -22,6 +21,11 @@ library(tidyverse)
 library(tidybayes)
 library(performance)
 library(ggplot2)
+library(rstan)
+library(dplyr)
+# Detección de núcleos para BRMS------------------------------------------------
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
 # ------------------Creacion de la base de datos --------------------------#
 # melatonine_all <- read_excel("data/pmed.1002587.s005.xlsx", sheet = "Combined")
 # melatonine <- melatonine_all[,c("ParticipantID", "Treatment", "Delayed/Not Delayed",
@@ -46,13 +50,19 @@ str(melatonine)
 # melatonine$ParticipantID <- as.factor(melatonine$ParticipantID)
 
 #------------------------- Limpieza de la base de datos -----------------------#
-columnas_uso <- c("ParticipantID","SOL_ACT", "SET1_ACT", "Treatment", "StudyPeriodWeek",
-                  "Work_status", "TIB_ACT", "TST_ACT", "SE_ACT", "Mes")
+columnas_uso <- c("ParticipantID","SOL_SD_num", "SET1_ACT", "Treatment", "StudyPeriodWeek",
+                  "Work_status", "TIB_ACT", "TST_ACT", "SE_ACT", "Mes", "StudyPeriodWeekFactor")
 
 datos_clean <- na.omit(melatonine[, columnas_uso])
 
+sol_mean <- mean(datos_clean$SOL_SD_num)
+sol_sd <- sd(datos_clean$SOL_SD_num)
+
+set1_mean <- mean(datos_clean$SET1_ACT)
+set1_sd <- sd(datos_clean$SET1_ACT)
+
 datos_est <- data.frame(
-  SOL_ACT=melatonine$SOL_ACT,
+  SOL_SD_num=melatonine$SOL_SD_num,
   SET1_ACT=melatonine$SET1_ACT,
   SE_ACT=melatonine$SE_ACT,
   SET1_ACT_AVG_BASE=melatonine$SET1_ACT_AVG_BASE,
@@ -64,6 +74,7 @@ X <- as.data.frame(X)
 X$ParticipantID <- melatonine$ParticipantID
 X$Treatment <- melatonine$Treatment
 X$StudyPeriodWeek <- melatonine$StudyPeriodWeek
+X$StudyPeriodWeekFactor <- melatonine$StudyPeriodWeekFactor
 X$Work_status <- melatonine$Work_status
 X$Mes <- melatonine$Mes
 X
@@ -91,10 +102,8 @@ unique(X_clean$Work_status)
 
 #----------------------------- Modelo BRMS ------------------------------------#
 formula_multi <- mvbf(
-  SOL_ACT ~ Treatment + StudyPeriodWeek + Work_status +SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE+ (1|ParticipantID),
-  SET1_ACT ~ Treatment + StudyPeriodWeek + Work_status +SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE+ (1|ParticipantID),
-  # SOL_ACT ~ Treatment * StudyPeriodWeek + Work_status +(1|ParticipantID),
-  # SET1_ACT ~ Treatment * StudyPeriodWeek + Work_status + (1|ParticipantID),
+  SOL_SD_num ~ Treatment + StudyPeriodWeekFactor + Work_status +SOL_ACT_AVG_BASE +SET1_ACT_AVG_BASE + (1 | ParticipantID/StudyPeriodWeekFactor),
+  SET1_ACT ~ Treatment + StudyPeriodWeekFactor + Work_status +SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE+ (1|ParticipantID/StudyPeriodWeekFactor),
   rescor = T
 )
 fit_multi <- brm(
@@ -109,7 +118,7 @@ fit_multi <- brm(
 summary(fit_multi)
 get_variables(fit_multi)
 #-----------------Gráficos----------------------------------------------------#
-x11();pp_check(fit_multi, resp = "SOLACT")
+x11();pp_check(fit_multi, resp = "SOLSDnum")
 x11();pp_check(fit_multi, resp = "SET1ACT")
 
 #----------------R Cuadrado --------------------------------------------------~#
@@ -119,37 +128,52 @@ str(X_clean)
 
 # Use el modelo de bayes fit_multi
 # Calculo de las media posterior a partir del modelo
-
+str(pred_MVR)
 pred_MVR <- fit_multi %>% 
   epred_draws(newdata = expand_grid(
     Treatment = levels(X_clean$Treatment),
-    StudyPeriodWeek = levels(X_clean$StudyPeriodWeek),
+    StudyPeriodWeekFactor = levels(X_clean$StudyPeriodWeekFactor),
     Work_status = levels(X_clean$Work_status),
     SOL_ACT_AVG_BASE= seq( min( X_clean$SOL_ACT_AVG_BASE), max(X_clean$SOL_ACT_AVG_BASE), by=1),
     SET1_ACT_AVG_BASE= seq( min( X_clean$SET1_ACT_AVG_BASE), max(X_clean$SET1_ACT_AVG_BASE), by=1),
   ), 
   re_formula = NA)
-
-summary(pred_MVR)
-
-library(ggplot2)
+# Escala de los datos
+mutated_pred <- pred_MVR %>%
+  mutate(.epred = if_else(.category == "SOLSDnum", .epred*sol_sd+sol_mean, .epred*set1_sd+set1_mean))
 
 # Grafico separado por latencia y eficiencia
 
 windows()
-# x11()
-ggplot(pred_MVR, aes(x = StudyPeriodWeek, y = .epred, color = Treatment)) +
-  stat_pointinterval(position = position_dodge(width = 0.3)) + 
-  facet_wrap(~.category, scales = "free_y") + 
-  theme_minimal() +
+# png("img/bayes_sol.png", width = 1000, height = 800)
+ggplot(mutated_pred[mutated_pred$.category=="SOLSDnum",], aes(y = StudyPeriodWeekFactor, x = .epred, color = Treatment)) +
+  # stat_pointinterval(position = position_dodge(width = 0.3)) + 
+  stat_slab(position = position_dodge(width = 0.5)) +
+  scale_color_hue(labels=c("1" = "Placebo", "2"="Melatonina 0.5 mg")) +
+  # theme_minimal() +
   labs(
     title = "Efecto esperado de la Melatonina",
-    subtitle = "Predicciones de la media posterior por grupo",
-    y = "Valor esperado (escala del modelo)",
-    x = "Semana del Periodo de Estudio",
+    subtitle = "Predicciones de la media posterior de la latencia del sueño",
+    x = "Valor esperado SOL_SD",
+    y = "Semana del Periodo de Estudio",
     color = "Tratamiento"
   )
-
+# dev.off()
+windows()
+# png("img/bayes_set.png", width = 1000, height = 800)
+ggplot(mutated_pred[mutated_pred$.category=="SET1ACT",], aes(y = StudyPeriodWeekFactor, x = .epred, color = Treatment)) +
+  # stat_pointinterval(position = position_dodge(width = 0.3)) + 
+  stat_slab(position = position_dodge(width = 0.5)) +
+  scale_color_hue(labels=c("1" = "Placebo", "2"="Melatonina 0.5 mg")) +
+  # theme_minimal() +
+  labs(
+    title = "Efecto esperado de la Melatonina ",
+    subtitle = "Predicciones de la media posterior de la eficiencia del sueli",
+    x = "Valor esperado SET1_ACT",
+    y = "Semana del Periodo de Estudio",
+    color = "Tratamiento"
+  )
+# dev.off()
 # Ajuste del Modelo Bayesiano para Latencia con inflación de 0 Gamma
 fit_bayes_sol <- brm(
   bf(SOL_ACT ~ Treatment + StudyPeriodWeek + SOL_ACT_AVG_BASE + SET1_ACT_AVG_BASE + (1 | ParticipantID),
